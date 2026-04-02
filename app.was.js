@@ -5,10 +5,12 @@ const axios = require("axios");
 const config = require("./config.json")
 const https = require("https");
 const multer = require("multer");
+const cors = require("cors");
 
 const app = express();
 
 // 1. JSON 데이터 해석을 위한 기본 설정
+app.use(cors());
 app.use(express.json());
 
 // 2. [전역 핸들러] 모든 요청은 여기서 먼저 걸러집니다.
@@ -31,15 +33,12 @@ const authRouter = require("./task/login/auth");
 // const postRouter = require("./task/post/board"); // 예시
 
 app.use("/auth", authRouter);
-app.use("/post", postRouter);
+// app.use("/post", postRouter);
 
 app.listen(config.PORT, () => {
     console.log(`Server started: http://localhost:${config.PORT}`);
 });
 
-app.listen(config.PORT, () => {
-    console.log(`http://localhost:${config.PORT}`)
-});
 
 
 
