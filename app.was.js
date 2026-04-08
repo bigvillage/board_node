@@ -6,6 +6,7 @@ const config = require("./config.json")
 const https = require("https");
 const multer = require("multer");
 const cors = require("cors");
+const uploadHandler = require("./upload/upload");
 
 const app = express();
 
@@ -30,10 +31,12 @@ app.use((req, res, next) => {
 
 // 3. 검증이 끝난 후 실제 작업을 할 파일들로 분기
 const authRouter = require("./task/login/auth");
+const uploadHandler = require("./task/upload/upload");
 // const postRouter = require("./task/post/board"); // 예시
 
 app.use("/auth", authRouter);
 // app.use("/post", postRouter);
+app.post("/upload", uploadHandler.uploadMiddleware, uploadHandler.processUpload);
 
 app.listen(config.PORT, () => {
     console.log(`Server started: http://localhost:${config.PORT}`);
