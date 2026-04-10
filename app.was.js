@@ -6,7 +6,6 @@ const config = require("./config.json")
 const https = require("https");
 const multer = require("multer");
 const cors = require("cors");
-const uploadHandler = require("./upload/upload");
 
 const app = express();
 
@@ -30,9 +29,12 @@ app.use((req, res, next) => {
 });
 
 // 3. 검증이 끝난 후 실제 작업을 할 파일들로 분기
+const listRouter = require('./task/list/service')
+
 const authRouter = require("./task/login/auth");
 const uploadHandler = require("./task/upload/upload");
 // const postRouter = require("./task/post/board"); // 예시
+app.use('/api', listRouter)
 
 app.use("/auth", authRouter);
 // app.use("/post", postRouter);

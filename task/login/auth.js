@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const connectDB = require("./db");
+const connectDB = require("../../db");
 const User = require("./models/user");
 const bcrypt = require("bcrypt"); // 1. bcrypt 라이브러리 불러오기
 
