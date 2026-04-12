@@ -39,7 +39,19 @@ app.use('/api', listRouter)
 app.use("/auth", authRouter);
 // app.use("/post", postRouter);
 app.post("/upload", uploadHandler.uploadMiddleware, uploadHandler.processUpload);
+app.get('/api/download', async (req, res) => {
+    const { url, name } = req.query
+    console.log("url ==> ", url)
+    console.log("name ==> ", name)
 
+    const response = await fetch(url)
+    const buffer = await response.arrayBuffer()
+
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(name)}"`)
+    res.setHeader('Content-Type', 'application/octet-stream')
+
+    res.send(Buffer.from(buffer))
+})
 app.listen(config.PORT, () => {
     console.log(`Server started: http://localhost:${config.PORT}`);
 });
