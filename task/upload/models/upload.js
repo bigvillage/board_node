@@ -30,6 +30,12 @@ const uploadSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+
+  updatedAt: Date,
+  isUpdated: {
+    type: Boolean,
+    default: false
   }
 });
 

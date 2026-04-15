@@ -39,6 +39,12 @@ app.use('/api', listRouter)
 app.use("/auth", authRouter);
 // app.use("/post", postRouter);
 app.post("/upload", uploadHandler.uploadMiddleware, uploadHandler.processUpload);
+app.put(
+  "/api/update/:id",
+  uploadHandler.uploadMiddleware,
+  uploadHandler.updateDocument
+);
+
 app.get('/api/download', async (req, res) => {
     const { url, name } = req.query
     console.log("url ==> ", url)
@@ -52,6 +58,7 @@ app.get('/api/download', async (req, res) => {
 
     res.send(Buffer.from(buffer))
 })
+
 app.listen(config.PORT, () => {
     console.log(`Server started: http://localhost:${config.PORT}`);
 });

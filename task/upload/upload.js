@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const multer = require('multer');
 const mongoose = require('mongoose');
 const connectDB = require("../../db");
@@ -20,41 +20,6 @@ const s3 = new S3Client({
 // 2. Multer 설정
 const upload = multer({ storage: multer.memoryStorage() });
 
-// 3. DB 모델 정의 (기존 유지 + 확장)
-// const uploadSchema = new mongoose.Schema({
-//   title: {
-//     type: String,
-//     required: true
-//   },
-//   content: String,
-
-//   tags: {
-//     type: [String],
-//     default: []
-//   },
-
-//   files: [
-//     {
-//       fileKey: String,
-//       originalName: String,
-//       size: Number,
-//       fileUrl: String
-//     }
-//   ],
-
-//   userId: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: 'User'
-//   },
-
-//   createdAt: {
-//     type: Date,
-//     default: Date.now
-//   }
-// });
-
-// // 모델 중복 생성 방지
-// const Upload = mongoose.model('Upload', uploadSchema`);
 
 module.exports = {
   uploadMiddleware: upload.array('files'),
@@ -82,6 +47,7 @@ module.exports = {
       // 파일 업로드 루프
       for (const file of files) {
         const utf8Name = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        
 
         const fileKey = `${Date.now()}_${utf8Name}`;
 
@@ -132,6 +98,86 @@ module.exports = {
     } catch (error) {
       console.error('❌ 에러:', error);
       res.status(500).json({ message: '서버 오류 발생' });
+    }
+  },
+  updateDocument: async (req, res) => {
+    try {
+      const { id } = req.params
+      const { title, content, tags } = req.body
+      const files = req.files
+
+      const removedFiles = req.body.removedFiles
+        ? JSON.parse(req.body.removedFiles)
+        : []
+
+      const doc = await Upload.findById(id)
+      if (!doc) {
+        return res.status(404).json({ message: '문서 없음' })
+      }
+
+      // ==============================
+      // 🔥 1. 삭제된 파일 제거
+      // ==============================
+      for (const file of removedFiles) {
+        await s3.send(new DeleteObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: file.fileKey
+        }))
+      }
+
+      // Mongo에서도 제거
+      let updatedFiles = doc.files.filter(f =>
+        !removedFiles.some(r => r.fileKey === f.fileKey)
+      )
+
+      // ==============================
+      // 🔥 2. 새 파일 추가
+      // ==============================
+      if (files && files.length > 0) {
+        for (const file of files) {
+          const utf8Name = Buffer.from(file.originalname, 'latin1').toString('utf8')
+          const fileKey = `${Date.now()}_${utf8Name}`
+
+          await s3.send(new PutObjectCommand({
+            Bucket: process.env.R2_BUCKET_NAME,
+            Key: fileKey,
+            Body: file.buffer,
+            ContentType: file.mimetype,
+          }))
+
+          const fileUrl = `${process.env.R2_PUBLIC_URL}/${fileKey}`
+
+          updatedFiles.push({
+            fileKey,
+            originalName: utf8Name,
+            size: file.size,
+            type: file.mimetype,
+            fileUrl
+          })
+        }
+      }
+
+      // ==============================
+      // 🔥 3. 나머지 업데이트
+      // ==============================
+      doc.title = title
+      doc.content = content
+      doc.tags = tags ? JSON.parse(tags) : []
+      doc.files = updatedFiles
+
+      doc.updatedAt = new Date()
+      doc.isUpdated = true
+
+      await doc.save()
+
+      res.json({
+        message: '수정 완료',
+        data: doc
+      })
+
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ message: '서버 오류' })
     }
   }
 };
