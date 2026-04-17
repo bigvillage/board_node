@@ -59,6 +59,8 @@ app.get('/api/download', async (req, res) => {
     res.send(Buffer.from(buffer))
 })
 
+app.delete("/api/upload/:id", uploadHandler.deleteDocument)
+
 app.listen(config.PORT, () => {
     console.log(`Server started: http://localhost:${config.PORT}`);
 });

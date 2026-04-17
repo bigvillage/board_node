@@ -179,5 +179,37 @@ module.exports = {
       console.error(error)
       res.status(500).json({ message: '서버 오류' })
     }
+  },
+
+  deleteDocument: async (req, res) => {
+    try {
+      const { id } = req.params
+
+      const doc = await Upload.findById(id)
+      if (!doc) {
+        return res.status(404).json({ message: '문서 없음' })
+      }
+
+      // 🔥 1. R2 파일 전부 삭제
+      for (const file of doc.files) {
+        if (!file.fileKey) continue
+
+        await s3.send(new DeleteObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: file.fileKey
+        }))
+
+        console.log('🗑 파일 삭제:', file.fileKey)
+      }
+
+      // 🔥 2. Mongo 삭제
+      await Upload.findByIdAndDelete(id)
+
+      res.json({ message: '삭제 완료' })
+
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ message: '서버 오류' })
+    }
   }
 };
