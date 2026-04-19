@@ -90,6 +90,32 @@ module.exports = {
 
       console.log('🎉 DB 저장 완료');
 
+      await newUpload.save()
+
+      // ==============================
+      // 🔥 Elasticsearch 저장
+      // ==============================
+      await axios.post(
+        `${process.env.ES_URL}/documents/_doc/${newUpload._id}`,
+        {
+          title: newUpload.title,
+          content: newUpload.content,
+          tags: newUpload.tags,
+          createdAt: newUpload.createdAt,
+          files: newUpload.files.map(f => ({
+            originalName: f.originalName,
+            fileUrl: f.fileUrl
+          }))
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      console.log('✅ Elasticsearch 저장 완료')
+
       res.status(200).json({
         message: '업로드 + DB 저장 완료',
         data: newUpload
@@ -169,6 +195,21 @@ module.exports = {
       doc.isUpdated = true
 
       await doc.save()
+
+      await axios.put(
+        `${process.env.ES_URL}/documents/_doc/${doc._id}`,
+        {
+          title: doc.title,
+          content: doc.content,
+          tags: doc.tags,
+          createdAt: doc.createdAt,
+          updatedAt: doc.updatedAt,
+          files: doc.files.map(f => ({
+            originalName: f.originalName,
+            fileUrl: f.fileUrl
+          }))
+        }
+      )
 
       res.json({
         message: '수정 완료',
