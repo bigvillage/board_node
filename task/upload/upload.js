@@ -109,13 +109,14 @@ module.exports = {
           {
             auth: {
               username: 'elastic',
-              password: process.env.ES_PASSWORD
+              password: "123!@#qwe"
             }
           }
         )
         console.log('ES 저장 완료')
       } catch (error) {
-        console.error('ES 저장 실패')
+        console.error('ES 저장 실패:', error.message)
+        console.error(error.response?.data)
       }
 
 
@@ -216,7 +217,9 @@ module.exports = {
         )
         console.log("ES 저장 완료")
       } catch (error) {
-        console.error('ES 저장 실패')
+        console.error('ES 저장 실패:', error.message)
+        console.error(error.response?.data)
+
       }
 
       res.json({
@@ -265,7 +268,7 @@ module.exports = {
             }
           }
         )
-        console.error('ES 저장 완료')
+        console.log('ES 저장 완료')
       } catch (error) {
         console.error('ES 저장 실패')
       }
