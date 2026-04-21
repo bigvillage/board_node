@@ -31,7 +31,7 @@ module.exports = {
     try {
       console.log('🔥 업로드 시작');
 
-      const { title, content, tags } = req.body;
+      const { title, content, tags, isFavorite } = req.body;
       const files = req.files;
 
       // 필수값 체크
@@ -80,8 +80,7 @@ module.exports = {
         content,
         tags: tags ? JSON.parse(tags) : [],
         files: uploadedFilesInfo,
-
-        // 로그인 붙이면 사용
+        isFavorite: isFavorite === true || isFavorite === 'true',
         userId: req.user?.id
       });
 
@@ -100,6 +99,7 @@ module.exports = {
             title: newUpload.title,
             content: newUpload.content,
             tags: newUpload.tags,
+            isFavorite: newUpload.isFavorite ?? false,
             createdAt: newUpload.createdAt,
             files: newUpload.files.map(f => ({
               originalName: f.originalName,
@@ -133,7 +133,7 @@ module.exports = {
   updateDocument: async (req, res) => {
     try {
       const { id } = req.params
-      const { title, content, tags } = req.body
+      const { title, content, tags, isFavorite } = req.body
       const files = req.files
 
       const removedFiles = req.body.removedFiles
@@ -187,6 +187,9 @@ module.exports = {
       doc.content = content
       doc.tags = tags ? JSON.parse(tags) : []
       doc.files = updatedFiles
+      if (isFavorite !== undefined) {
+        doc.isFavorite = isFavorite === true || isFavorite === 'true'
+      }
 
       doc.updatedAt = new Date()
       doc.isUpdated = true
@@ -195,23 +198,25 @@ module.exports = {
 
       // ES 수정
       try {
-        await axios.put(
-          `${process.env.ES_URL}/documents/_doc/${doc._id}`,
+        await axios.post(
+          `${process.env.ES_URL}/documents/_update/${doc._id}`,
           {
-            title: doc.title,
-            content: doc.content,
-            tags: doc.tags,
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt,
-            files: doc.files.map(f => ({
-              originalName: f.originalName,
-              fileUrl: f.fileUrl
-            }))
+            doc: {
+              title: doc.title,
+              content: doc.content,
+              tags: doc.tags,
+              isFavorite: doc.isFavorite,
+              updatedAt: doc.updatedAt,
+              files: doc.files.map(f => ({
+                originalName: f.originalName,
+                fileUrl: f.fileUrl
+              }))
+            }
           },
           {
             auth: {
               username: 'elastic',
-              password: process.env.ES_PASSWORD
+              password: "123!@#qwe"
             }
           }
         )
@@ -264,7 +269,7 @@ module.exports = {
           {
             auth: {
               username: 'elastic',
-              password: process.env.ES_PASSWORD
+              password: "123!@#qwe"
             }
           }
         )
@@ -274,6 +279,52 @@ module.exports = {
       }
 
       res.json({ message: '삭제 완료' })
+
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ message: '서버 오류' })
+    }
+  },
+
+  toggleFavorite: async (req, res) => {
+    try {
+      const { id } = req.params
+      const { isFavorite } = req.body
+
+      const updated = await Upload.findByIdAndUpdate(
+        id,
+        { isFavorite: isFavorite === true || isFavorite === 'true' },
+        { new: true }
+      )
+
+      if (!updated) {
+        return res.status(404).json({ message: '문서 없음' })
+      }
+
+      // ES 업데이트
+      try {
+        await axios.post(
+          `${process.env.ES_URL}/documents/_update/${id}`,
+          {
+            doc: {
+              isFavorite: updated.isFavorite
+            }
+          },
+          {
+            auth: {
+              username: 'elastic',
+              password: "123!@#qwe"
+            }
+          }
+        )
+      } catch (e) {
+        console.error('ES favorite update 실패', e.response?.data)
+      }
+
+      res.json({
+        message: '즐겨찾기 변경 완료',
+        isFavorite: updated.isFavorite
+      })
 
     } catch (error) {
       console.error(error)
