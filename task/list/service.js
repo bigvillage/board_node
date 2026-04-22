@@ -14,4 +14,15 @@ router.get('/list', async (req, res) => {
   }
 })
 
+router.get('/favorites', async (req, res) => {
+  try {
+    const docs = await List.find({ isFavorite: true }).sort({ createdAt: -1 })
+
+    res.json(docs)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ message: '즐겨찾기 조회 실패' })
+  }
+})
+
 module.exports = router
