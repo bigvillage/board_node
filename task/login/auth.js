@@ -61,6 +61,35 @@ const login = async (userData) => {
     }
 };
 
+const checkPassword = async (userData) => {
+    try {
+        const { email, password } = userData;
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return { success: false, message: "유저 없음" };
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return { success: false, message: "비밀번호 틀림" };
+        }
+
+        return { success: true };
+
+    } catch (error) {
+        return { success: false, message: "서버 오류" };
+    }
+};
+
+// 🔥 라우터 추가
+router.post("/check-password", async (req, res) => {
+    const result = await checkPassword(req.body);
+    res.json(result);
+});
+
 // 라우터 등록
 router.post("/login", async (req, res) => {
     const result = await login(req.body);
