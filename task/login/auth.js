@@ -84,23 +84,48 @@ const checkPassword = async (userData) => {
     }
 };
 
-// 🔥 라우터 추가
+// 비밀번호 변경
+const changePassword = async (userData) => {
+    try {
+        const { email, newPassword } = userData;
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return { success: false, message: "유저 없음" };
+        }
+
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        user.password = hashedPassword;
+        await user.save();
+
+        return { success: true };
+
+    } catch (error) {
+        return { success: false, message: "서버 오류" };
+    }
+};
+
+
 router.post("/check-password", async (req, res) => {
     const result = await checkPassword(req.body);
     res.json(result);
 });
 
-// 라우터 등록
 router.post("/login", async (req, res) => {
     const result = await login(req.body);
     res.json(result);
 });
 
-/**
- * [라우터 설정]
- */
 router.post("/signup", async (req, res) => {
     const result = await join(req.body);
+    res.json(result);
+});
+
+router.post("/change-password", async (req, res) => {
+    const result = await changePassword(req.body);
     res.json(result);
 });
 
