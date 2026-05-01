@@ -3,6 +3,8 @@ const router = express.Router();
 const connectDB = require("../../db");
 const User = require("./models/user");
 const bcrypt = require("bcrypt"); // 1. bcrypt 라이브러리 불러오기
+const jwt = require("jsonwebtoken");
+const SECRET = "mysecretkey";
 
 // DB 연결 실행
 connectDB();
@@ -39,6 +41,28 @@ const join = async (userData) => {
     }
 };
 
+// const login = async (userData) => {
+//     try {
+//         const { email, password } = userData;
+//         const user = await User.findOne({ email });
+
+//         if (!user) {
+//             return { success: false, message: "가입되지 않은 이메일입니다." };
+//         }
+
+//         // 여기서 bcrypt로 비교!
+//         const isMatch = await bcrypt.compare(password, user.password);
+
+//         if (isMatch) {
+//             return { success: true, user: { name: user.name, email: user.email } };
+//         } else {
+//             return { success: false, message: "비밀번호가 일치하지 않습니다." };
+//         }
+//     } catch (error) {
+//         return { success: false, message: "서버 오류 발생" };
+//     }
+// };
+
 const login = async (userData) => {
     try {
         const { email, password } = userData;
@@ -48,16 +72,45 @@ const login = async (userData) => {
             return { success: false, message: "가입되지 않은 이메일입니다." };
         }
 
-        // 여기서 bcrypt로 비교!
         const isMatch = await bcrypt.compare(password, user.password);
 
-        if (isMatch) {
-            return { success: true, user: { name: user.name, email: user.email } };
-        } else {
+        if (!isMatch) {
             return { success: false, message: "비밀번호가 일치하지 않습니다." };
         }
+
+        // JWT 생성
+        const token = jwt.sign(
+            { email: user.email, id: user._id },
+            SECRET,
+            { expiresIn: "1h" }
+        );
+
+        return {
+            success: true,
+            token,
+            user: { name: user.name, email: user.email }
+        };
+
     } catch (error) {
         return { success: false, message: "서버 오류 발생" };
+    }
+};
+
+const authMiddleware = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return res.status(401).json({ message: "토큰 없음" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    try {
+        const decoded = jwt.verify(token, SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: "토큰 유효하지 않음" });
     }
 };
 
@@ -109,9 +162,26 @@ const changePassword = async (userData) => {
 };
 
 
-router.post("/check-password", async (req, res) => {
-    const result = await checkPassword(req.body);
-    res.json(result);
+// router.post("/check-password", async (req, res) => {
+//     const result = await checkPassword(req.body);
+//     res.json(result);
+// });
+router.post("/change-password", authMiddleware, async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+
+        const user = await User.findOne({ email: req.user.email });
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        user.password = hashedPassword;
+        await user.save();
+
+        res.json({ success: true });
+
+    } catch (e) {
+        res.status(500).json({ success: false });
+    }
 });
 
 router.post("/login", async (req, res) => {
