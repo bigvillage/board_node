@@ -4,6 +4,7 @@
     "@aws-sdk/lib-storage": "^3.1026.0",
     "axios": "^1.14.0",
     "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",

@@ -4,23 +4,20 @@ const connectDB = require("../../db");
 const User = require("./models/user");
 const bcrypt = require("bcrypt"); // 1. bcrypt 라이브러리 불러오기
 const jwt = require("jsonwebtoken");
-const SECRET = "mysecretkey";
+const SECRET = "my_secret_key";
 
 // DB 연결 실행
 connectDB();
 
-/**
- * [회원가입 로직 함수]
- */
 const join = async (userData) => {
     try {
         const { name, email, password } = userData;
 
-        // 2. 비밀번호 암호화 실행 (10은 암호화 강도인 saltRounds)
+        // 비밀번호 암호화 실행 (10은 암호화 강도인 saltRounds)
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // 3. 암호화 된 hashed암호 넣기
+        // 암호화 된 hashed암호 넣기
         const newUser = new User({
             name,
             email,
@@ -63,7 +60,7 @@ const join = async (userData) => {
 //     }
 // };
 
-const login = async (userData) => {
+const login = async (userData, res) => {
     try {
         const { email, password } = userData;
         const user = await User.findOne({ email });
@@ -82,14 +79,17 @@ const login = async (userData) => {
         const token = jwt.sign(
             { email: user.email, id: user._id },
             SECRET,
-            { expiresIn: "1h" }
+            { expiresIn: '1h' }
         );
 
-        return {
-            success: true,
-            token,
-            user: { name: user.name, email: user.email }
-        };
+        // 쿠키 저장
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: false, // 개발환경 false
+            sameSite: 'Lax'
+        });
+
+        return { success: true, user: { name: user.name, email: user.email } };
 
     } catch (error) {
         return { success: false, message: "서버 오류 발생" };
@@ -198,5 +198,25 @@ router.post("/change-password", async (req, res) => {
     const result = await changePassword(req.body);
     res.json(result);
 });
+
+router.get('/me', (req, res) => {
+    const token = req.cookies.token
+
+    if (!token) {
+        return res.json({ success: false })
+    }
+
+    try {
+        const decoded = jwt.verify(token, SECRET)
+        return res.json({ success: true, user: decoded })
+    } catch (e) {
+        return res.json({ success: false })
+    }
+})
+
+router.post('/logout', (req, res) => {
+    res.clearCookie('token')
+    res.json({ success: true })
+})
 
 module.exports = router;

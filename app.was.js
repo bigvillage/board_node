@@ -1,12 +1,19 @@
 const express = require("express");
 const cors = require("cors");
 const config = require("./config.json");
-
+const cookieParser = require('cookie-parser')
 const app = express();
 
 // 1. 기본 설정
-app.use(cors());
-app.use(express.json());
+app.use(express.json())
+app.use(cookieParser())
+
+app.use(cors({
+  origin: 'http://localhost:5173', // Vue 주소
+  credentials: true // 쿠키 허용 핵심
+}))
+
+
 
 // 2. 공통 로그 미들웨어
 app.use((req, res, next) => {
@@ -20,6 +27,9 @@ app.use((req, res, next) => {
 const listRouter = require('./task/list/service');
 const authRouter = require("./task/login/auth");
 const uploadHandler = require("./task/upload/upload");
+
+// 인증
+app.use("/auth", authRouter);
 
 // 리스트 조회 (기존 유지)
 app.use('/api', listRouter);
@@ -67,9 +77,6 @@ app.delete(
 
 // 리스트 조회 (선택: listRouter 내부를 / 로 맞추면 사용 가능)
 // app.use("/api/documents", listRouter);
-
-// 인증
-app.use("/auth", authRouter);
 
 // 다운로드
 app.get('/api/download', async (req, res) => {
