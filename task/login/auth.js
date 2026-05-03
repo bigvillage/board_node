@@ -97,69 +97,67 @@ const login = async (userData, res) => {
 };
 
 const authMiddleware = (req, res, next) => {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies.token
 
-    if (!authHeader) {
-        return res.status(401).json({ message: "토큰 없음" });
+    if (!token) {
+        return res.status(401).json({ message: "토큰 없음" })
     }
 
-    const token = authHeader.split(" ")[1];
-
     try {
-        const decoded = jwt.verify(token, SECRET);
-        req.user = decoded;
-        next();
+        const decoded = jwt.verify(token, SECRET)
+        req.user = decoded
+        next()
     } catch (err) {
-        return res.status(401).json({ message: "토큰 유효하지 않음" });
+        return res.status(401).json({ message: "토큰 유효하지 않음" })
     }
-};
+}
 
-const checkPassword = async (userData) => {
-    try {
-        const { email, password } = userData;
+// const checkPassword = async (userData) => {
+//     try {
+//         const { email, password } = userData;
 
-        const user = await User.findOne({ email });
+//         const user = await User.findOne({ email });
 
-        if (!user) {
-            return { success: false, message: "유저 없음" };
-        }
+//         if (!user) {
+//             return { success: false, message: "유저 없음" };
+//         }
 
-        const isMatch = await bcrypt.compare(password, user.password);
+//         const isMatch = await bcrypt.compare(password, user.password);
 
-        if (!isMatch) {
-            return { success: false, message: "비밀번호 틀림" };
-        }
+//         if (!isMatch) {
+//             return { success: false, message: "비밀번호 틀림" };
+//         }
 
-        return { success: true };
+//         return { success: true };
 
-    } catch (error) {
-        return { success: false, message: "서버 오류" };
-    }
-};
+//     } catch (error) {
+//         return { success: false, message: "서버 오류" };
+//     }
+// };
 
 // 비밀번호 변경
-const changePassword = async (userData) => {
-    try {
-        const { email, newPassword } = userData;
+// const changePassword = async (userData) => {
+//     try {
+//         const { email, newPassword } = userData;
 
-        const user = await User.findOne({ email });
+//         const user = await User.findOne({ email });
 
-        if (!user) {
-            return { success: false, message: "유저 없음" };
-        }
+//         if (!user) {
+//             return { success: false, message: "유저 없음" };
+//         }
 
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+//         const saltRounds = 10;
+//         const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-        user.password = hashedPassword;
-        await user.save();
+//         user.password = hashedPassword;
+//         await user.save();
 
-        return { success: true };
+//         return { success: true };
 
-    } catch (error) {
-        return { success: false, message: "서버 오류" };
-    }
-};
+//     } catch (error) {
+//         return { success: false, message: "서버 오류" };
+//     }
+// };
 
 
 // router.post("/check-password", async (req, res) => {
@@ -168,36 +166,35 @@ const changePassword = async (userData) => {
 // });
 router.post("/change-password", authMiddleware, async (req, res) => {
     try {
-        const { newPassword } = req.body;
+        const { newPassword } = req.body
 
-        const user = await User.findOne({ email: req.user.email });
+        const user = await User.findOne({ email: req.user.email })
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const hashedPassword = await bcrypt.hash(newPassword, 10)
 
-        user.password = hashedPassword;
-        await user.save();
+        user.password = hashedPassword
+        await user.save()
 
-        res.json({ success: true });
-
+        res.json({ success: true })
     } catch (e) {
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false })
     }
-});
+})
 
 router.post("/login", async (req, res) => {
-    const result = await login(req.body);
-    res.json(result);
-});
+    const result = await login(req.body, res)
+    res.json(result)
+})
 
 router.post("/signup", async (req, res) => {
     const result = await join(req.body);
     res.json(result);
 });
 
-router.post("/change-password", async (req, res) => {
-    const result = await changePassword(req.body);
-    res.json(result);
-});
+// router.post("/change-password", async (req, res) => {
+//     const result = await changePassword(req.body);
+//     res.json(result);
+// });
 
 router.get('/me', (req, res) => {
     const token = req.cookies.token
