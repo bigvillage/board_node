@@ -112,58 +112,6 @@ const authMiddleware = (req, res, next) => {
     }
 }
 
-// const checkPassword = async (userData) => {
-//     try {
-//         const { email, password } = userData;
-
-//         const user = await User.findOne({ email });
-
-//         if (!user) {
-//             return { success: false, message: "유저 없음" };
-//         }
-
-//         const isMatch = await bcrypt.compare(password, user.password);
-
-//         if (!isMatch) {
-//             return { success: false, message: "비밀번호 틀림" };
-//         }
-
-//         return { success: true };
-
-//     } catch (error) {
-//         return { success: false, message: "서버 오류" };
-//     }
-// };
-
-// 비밀번호 변경
-// const changePassword = async (userData) => {
-//     try {
-//         const { email, newPassword } = userData;
-
-//         const user = await User.findOne({ email });
-
-//         if (!user) {
-//             return { success: false, message: "유저 없음" };
-//         }
-
-//         const saltRounds = 10;
-//         const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-
-//         user.password = hashedPassword;
-//         await user.save();
-
-//         return { success: true };
-
-//     } catch (error) {
-//         return { success: false, message: "서버 오류" };
-//     }
-// };
-
-
-// router.post("/check-password", async (req, res) => {
-//     const result = await checkPassword(req.body);
-//     res.json(result);
-// });
 router.post("/change-password", authMiddleware, async (req, res) => {
     try {
         const { newPassword } = req.body
@@ -190,11 +138,6 @@ router.post("/signup", async (req, res) => {
     const result = await join(req.body);
     res.json(result);
 });
-
-// router.post("/change-password", async (req, res) => {
-//     const result = await changePassword(req.body);
-//     res.json(result);
-// });
 
 router.get('/me', (req, res) => {
     const token = req.cookies.token
