@@ -1,28 +1,36 @@
-const util = require("../../../../lib/util");
+const util = require("../../../lib/util.js");
 const svc = require("./service");
 
+// POST /api/documents/upload (신규 등록)
 const post = async (req, res, qObj) => {
-    // 새 문서 등록
-    svc.upload(req, res, qObj, (error, result) => {
+    svc.processUpload(req, res, qObj, (error, result) => {
         if (error) return util.writeError(error, res);
         util.writeSuccess(result, res);
     });
 };
 
+// PUT /api/documents/upload (문서 수정)
 const put = async (req, res, qObj) => {
-    // 문서 수정
-    svc.update(req, res, qObj, (error, result) => {
+    svc.updateDocument(req, res, qObj, (error, result) => {
         if (error) return util.writeError(error, res);
         util.writeSuccess(result, res);
     });
 };
 
+// DELETE /api/documents/upload (문서 삭제)
 const del = async (req, res, qObj) => {
-    // 문서 삭제
-    svc.remove(req, res, qObj, (error, result) => {
+    svc.deleteDocument(req, res, qObj, (error, result) => {
         if (error) return util.writeError(error, res);
         util.writeSuccess(result, res);
     });
 };
 
-module.exports = { post, put, del };
+// PATCH /api/documents/upload (즐겨찾기 토글)
+const patch = async (req, res, qObj) => {
+    svc.toggleFavorite(req, res, qObj, (error, result) => {
+        if (error) return util.writeError(error, res);
+        util.writeSuccess(result, res);
+    });
+};
+
+module.exports = { post, put, del, patch };
